@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package shared.auth.v1;
+
+option go_package = "./auth/v1;authv1";
+
+service AuthService {
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+message CreateTokenRequest {
+  string user_id = 1;
+  string name = 2;
+  repeated string abilities = 3;
+}
+
+message CreateTokenResponse {
+  string token = 1;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  string user_id = 1;
+  repeated string abilities = 2;
+  bool is_valid = 3;
+}
+
+message RevokeTokenRequest {
+  string token = 1;
+}
+
+message RevokeTokenResponse {}

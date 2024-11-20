@@ -1,0 +1,127 @@
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_SERVICE_ADDR=auth-service:9091
+      - USER_SERVICE_ADDR=user-service:9092
+      - GIN_MODE=release
+    depends_on:
+      - auth-service
+    networks:
+      - backend
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    ports:
+      - "9091:9091"  # gRPC
+      - "8081:8081"  # HTTP (админка)
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-auth:5432/auth?sslmode=disable
+      - GRPC_PORT=9091
+      - HTTP_PORT=8081
+      - GIN_MODE=release
+    depends_on:
+      - postgres-auth
+    networks:
+      - backend
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    ports:
+      - "9092:9092"  # gRPC
+      - "8082:8082"  # HTTP (админка)
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-user:5432/user?sslmode=disable
+      - GRPC_PORT=9092
+      - HTTP_PORT=8082
+      - AUTH_SERVICE_ADDR=auth-service:9091
+      - GIN_MODE=release
+    depends_on:
+      - postgres-user
+    networks:
+      - backend
+
+  postgres-auth:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  postgres-user:
+    image: postgres:17-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  postgres-auth-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres-auth:5432/auth?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres-auth
+    networks:
+      - backend
+
+  postgres-user-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres-user:5432/user?sslmode=disable
+    ports:
+      - "9188:9187"
+    depends_on:
+      - postgres-user
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - backend
+
+volumes:
+  postgres-auth-data:
+  postgres-user-data:
+  grafana-storage:
+
+networks:
+  backend:
+    driver: bridge

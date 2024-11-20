@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package shared.common.types.v1;
+
+option go_package = "./common/types/v1;typesv1";
