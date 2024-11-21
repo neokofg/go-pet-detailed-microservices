@@ -48,11 +48,11 @@ func (route *Router) InitRoutes(r *gin.Engine) {
 		}
 		news := v1.Group("/news")
 		{
-			news.GET("/feed")
-			news.GET("/:id")
-			news.POST("/new", middleware.AuthMiddleware(authClient))
-			news.DELETE("/:id", middleware.AuthMiddleware(authClient))
-			news.PATCH("/:id", middleware.AuthMiddleware(authClient))
+			news.GET("/feed", route.app.Handlers.NewsQueriesHandler.GetNewsFeed)
+			news.GET("/:id", route.app.Handlers.NewsQueriesHandler.GetNews)
+			news.POST("/new", middleware.AuthMiddleware(authClient), route.app.Handlers.NewsCommandHandler.CreateNews)
+			news.DELETE("/:id", middleware.AuthMiddleware(authClient), route.app.Handlers.NewsCommandHandler.DeleteNews)
+			news.PATCH("/:id", middleware.AuthMiddleware(authClient), route.app.Handlers.NewsCommandHandler.UpdateNews)
 		}
 	}
 }

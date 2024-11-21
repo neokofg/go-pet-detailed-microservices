@@ -15,6 +15,10 @@ scrape_configs:
     static_configs:
       - targets: [ 'user-service:8082' ]
 
+  - job_name: 'news-service'
+    static_configs:
+      - targets: [ 'news-service:8083' ]
+
   - job_name: 'postgres-auth'
     static_configs:
       - targets: ['postgres-auth-exporter:9187']
@@ -22,3 +26,7 @@ scrape_configs:
   - job_name: 'postgres-user'
     static_configs:
       - targets: [ 'postgres-user-exporter:9187' ]
+
+  - job_name: 'postgres-news'
+    static_configs:
+      - targets: [ 'postgres-news-exporter:9187' ]

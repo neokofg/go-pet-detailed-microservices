@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package news.v1;
+
+option go_package = "./news/v1;newsv1";
+
+import "google/protobuf/timestamp.proto";
+
+service NewsService {
+  rpc GetNewsFeed(GetNewsFeedRequest) returns (GetNewsFeedResponse) {}
+  rpc GetNewsById(GetNewsByIdRequest) returns (News) {}
+  rpc CreateNews(CreateNewsRequest) returns (News) {}
+  rpc DeleteNews(DeleteNewsRequest) returns (OperationResponse) {}
+  rpc UpdateNews(UpdateNewsRequest) returns (News) {}
+}
+
+message News {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string image_url = 4;
+  string user_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message GetNewsFeedRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message GetNewsFeedResponse {
+  repeated News news = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int32 total_items = 4;
+}
+
+message GetNewsByIdRequest {
+  string id = 1;
+}
+
+message CreateNewsRequest {
+  string token = 1;
+  string title = 2;
+  string content = 3;
+  string image_url = 4;
+}
+
+message DeleteNewsRequest {
+  string token = 1;
+  string id = 2;
+}
+
+message UpdateNewsRequest {
+  string token = 1;
+  string id = 2;
+  optional string title = 3;
+  optional string content = 4;
+  optional string image_url = 5;
+}
+
+message OperationResponse {
+  bool success = 1;
+  string message = 2;
+}

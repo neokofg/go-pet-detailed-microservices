@@ -6,6 +6,7 @@ import (
 	userProto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/user/v1"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type UserCommandsHandler struct {
@@ -21,18 +22,21 @@ func NewUserCommandsHandler(logger *zap.Logger, userClient userProto.UserService
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+	Username string `json:"username" binding:"required,min=3,max=32"`
 }
 
 func (h *UserCommandsHandler) Register(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	resp, err := h.userSvc.Register(context.Background(), &userProto.RegisterRequest{
+	resp, err := h.userSvc.Register(ctx, &userProto.RegisterRequest{
 		Email:    req.Email,
 		Password: req.Password,
 		Username: req.Username,
@@ -46,18 +50,21 @@ func (h *UserCommandsHandler) Register(c *gin.Context) {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
 func (h *UserCommandsHandler) Login(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	resp, err := h.userSvc.Login(context.Background(), &userProto.LoginRequest{
+	resp, err := h.userSvc.Login(ctx, &userProto.LoginRequest{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -70,7 +77,10 @@ func (h *UserCommandsHandler) Login(c *gin.Context) {
 }
 
 func (h *UserCommandsHandler) Logout(c *gin.Context) {
-	resp, err := h.userSvc.Logout(context.Background(), &userProto.LogoutRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := h.userSvc.Logout(ctx, &userProto.LogoutRequest{
 		Token: c.GetString("token"),
 	})
 	if err != nil {
@@ -88,6 +98,9 @@ type UpdateRequest struct {
 }
 
 func (h *UserCommandsHandler) UpdateUser(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	var req UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -107,7 +120,7 @@ func (h *UserCommandsHandler) UpdateUser(c *gin.Context) {
 		protoRequest.Avatar = &req.Avatar
 	}
 
-	resp, err := h.userSvc.UpdateUser(context.Background(), protoRequest)
+	resp, err := h.userSvc.UpdateUser(ctx, protoRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

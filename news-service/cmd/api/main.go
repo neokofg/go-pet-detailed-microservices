@@ -1,5 +1,9 @@
 package main
 
-func main() {
+import "github.com/neokofg/go-pet-detailed-microservices/news-service/internal/prelude"
 
+func main() {
+	logger := prelude.InitLogger()
+	client := prelude.InitClient(logger)
+	prelude.InitServer(client, logger)
 }

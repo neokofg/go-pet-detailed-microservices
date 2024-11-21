@@ -2,8 +2,8 @@ package prelude
 
 import (
 	"context"
-	"github.com/neokofg/go-pet-detailed-microservices/auth-service/internal/prelude/servers"
-	"github.com/neokofg/go-pet-detailed-microservices/auth-service/pkg/ent"
+	"github.com/neokofg/go-pet-detailed-microservices/news-service/internal/prelude/servers"
+	"github.com/neokofg/go-pet-detailed-microservices/news-service/pkg/ent"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -13,9 +13,11 @@ import (
 
 func InitServer(client *ent.Client, logger *zap.Logger) {
 	defer logger.Info("Servers exited properly")
+	defer client.Close()
 
-	grpcServer := servers.InitGrpcServer(client, logger)
+	grpcServer, cleanup := servers.InitGrpcServer(client, logger)
 	defer grpcServer.GracefulStop()
+	defer cleanup()
 
 	ginServer := servers.InitGinServer(logger)
 	defer func() {

@@ -6,4 +6,5 @@ use (
 	./auth-service
 	./proto
 	./user-service
+	./news-service
 )

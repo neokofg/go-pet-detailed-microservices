@@ -1,10 +1,12 @@
 package queries
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	userProto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/user/v1"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type UserQueriesHandler struct {
@@ -20,7 +22,10 @@ func NewUserQueriesHandler(logger *zap.Logger, userClient userProto.UserServiceC
 }
 
 func (h *UserQueriesHandler) GetUser(c *gin.Context) {
-	resp, err := h.userSvc.GetUser(c.Request.Context(), &userProto.GetUserRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := h.userSvc.GetUser(ctx, &userProto.GetUserRequest{
 		Token: c.GetString("token"),
 	})
 	if err != nil {

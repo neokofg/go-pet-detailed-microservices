@@ -6,6 +6,7 @@ replace github.com/neokofg/go-pet-detailed-microservices/proto => ../proto
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/google/uuid v1.6.0
 	github.com/neokofg/go-pet-detailed-microservices/proto v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.20.5
 	go.uber.org/zap v1.27.0

@@ -8,6 +8,7 @@ services:
     environment:
       - AUTH_SERVICE_ADDR=auth-service:9091
       - USER_SERVICE_ADDR=user-service:9092
+      - NEWS_SERVICE_ADDR=news-service:9093
       - GIN_MODE=release
     depends_on:
       - auth-service
@@ -49,6 +50,24 @@ services:
     networks:
       - backend
 
+  news-service:
+    build:
+      context: .
+      dockerfile: news-service/Dockerfile
+    ports:
+      - "9093:9093"  # gRPC
+      - "8083:8083"  # HTTP (админка)
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-news:5432/news?sslmode=disable
+      - GRPC_PORT=9093
+      - HTTP_PORT=8083
+      - USER_SERVICE_ADDR=user-service:9092
+      - GIN_MODE=release
+    depends_on:
+      - postgres-news
+    networks:
+      - backend
+
   postgres-auth:
     image: postgres:17-alpine
     ports:
@@ -75,6 +94,19 @@ services:
     networks:
       - backend
 
+  postgres-news:
+    image: postgres:17-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=news
+    volumes:
+      - postgres-news-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
   postgres-auth-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter
     environment:
@@ -94,6 +126,17 @@ services:
       - "9188:9187"
     depends_on:
       - postgres-user
+    networks:
+      - backend
+
+  postgres-news-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres-news:5432/news?sslmode=disable
+    ports:
+      - "9189:9187"
+    depends_on:
+      - postgres-news
     networks:
       - backend
 
@@ -120,6 +163,7 @@ services:
 volumes:
   postgres-auth-data:
   postgres-user-data:
+  postgres-news-data:
   grafana-storage:
 
 networks:

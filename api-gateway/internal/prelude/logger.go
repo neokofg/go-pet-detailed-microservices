@@ -1,11 +1,14 @@
 package prelude
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+	"log"
+)
 
 func InitLogger() *zap.Logger {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to initialize logger: %v", err) // Более изящное завершение
 	}
 	defer logger.Sync()
 	return logger

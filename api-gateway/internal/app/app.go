@@ -14,10 +14,10 @@ type App struct {
 }
 
 func NewApp(logger *zap.Logger) *App {
-	handlers, cleanup := handlers.InitHandlers(logger)
+	h, cleanup := handlers.InitHandlers(logger)
 	return &App{
 		Logger:   logger,
-		Handlers: handlers,
+		Handlers: h,
 		cleanup:  cleanup,
 	}
 }

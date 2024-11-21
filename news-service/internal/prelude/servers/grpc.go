@@ -2,9 +2,9 @@ package servers
 
 import (
 	"fmt"
-	"github.com/neokofg/go-pet-detailed-microservices/auth-service/internal/app/handlers"
-	"github.com/neokofg/go-pet-detailed-microservices/auth-service/pkg/ent"
-	proto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/auth/v1"
+	"github.com/neokofg/go-pet-detailed-microservices/news-service/internal/app/handlers"
+	"github.com/neokofg/go-pet-detailed-microservices/news-service/pkg/ent"
+	proto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/news/v1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -13,11 +13,11 @@ import (
 	"os"
 )
 
-func InitGrpcServer(client *ent.Client, logger *zap.Logger) *grpc.Server {
-	authHandler := handlers.InitHandlers(client, logger)
+func InitGrpcServer(client *ent.Client, logger *zap.Logger) (*grpc.Server, func()) {
+	newsHandler, cleanup := handlers.InitHandlers(client, logger)
 
 	grpcServer := grpc.NewServer()
-	proto.RegisterAuthServiceServer(grpcServer, authHandler)
+	proto.RegisterNewsServiceServer(grpcServer, newsHandler)
 
 	healthServer := health.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, healthServer)
@@ -35,5 +35,5 @@ func InitGrpcServer(client *ent.Client, logger *zap.Logger) *grpc.Server {
 		}
 	}()
 
-	return grpcServer
+	return grpcServer, cleanup
 }
