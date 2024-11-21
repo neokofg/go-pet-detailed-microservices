@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"entgo.io/ent/dialect/sql"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/neokofg/go-pet-detailed-microservices/news-service/internal/app/factories"
@@ -10,7 +9,6 @@ import (
 	"github.com/neokofg/go-pet-detailed-microservices/news-service/pkg/ent/news"
 	proto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/news/v1"
 	"go.uber.org/zap"
-	"time"
 )
 
 type NewsService struct {
@@ -23,44 +21,20 @@ func NewNewsService(client *ent.Client, logger *zap.Logger) *NewsService {
 }
 
 func (s *NewsService) GetNewsFeed(ctx context.Context, req *proto.GetNewsFeedRequest) ([]*proto.News, int, int, error) {
-	var results []struct {
-		ID         uuid.UUID `sql:"id"`
-		Title      string    `sql:"title"`
-		Content    string    `sql:"content"`
-		ImageURL   string    `sql:"image_url"`
-		UserID     uuid.UUID `sql:"user_id"`
-		CreatedAt  time.Time `sql:"created_at"`
-		UpdatedAt  time.Time `sql:"updated_at"`
-		TotalCount int       `sql:"total_count"`
-	}
-
-	err := s.client.News.Query().
+	n, err := s.client.News.Query().
 		Limit(int(req.PageSize)).
-		Offset(int((req.Page-1)*req.PageSize)).
-		GroupBy(
-			news.FieldID,
-			news.FieldTitle,
-			news.FieldContent,
-			news.FieldUserID,
-			news.FieldImageURL,
-			news.FieldCreatedAt,
-			news.FieldUpdatedAt,
-		).
-		Aggregate(func(s *sql.Selector) string {
-			return sql.As(sql.Count("*"), "total_count")
-		}).
-		Scan(ctx, &results)
-
+		Offset(int((req.Page - 1) * req.PageSize)).
+		All(ctx)
 	if err != nil {
 		return nil, 0, 0, err
 	}
 
-	protoNews := make([]*proto.News, len(results))
-	var totalCount int
+	totalCount, err := s.client.News.Query().Count(ctx)
 
-	if len(results) > 0 {
-		totalCount = results[0].TotalCount
-		for i, r := range results {
+	protoNews := make([]*proto.News, len(n))
+
+	if len(n) > 0 {
+		for i, r := range n {
 			n := &ent.News{
 				ID:        r.ID,
 				Title:     r.Title,

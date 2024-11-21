@@ -8,6 +8,7 @@ import (
 	proto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/news/v1"
 	userProto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/user/v1"
 	"go.uber.org/zap"
+	"math"
 )
 
 type NewsHandler struct {
@@ -28,7 +29,7 @@ func (h *NewsHandler) GetNewsFeed(ctx context.Context, request *proto.GetNewsFee
 	if err != nil {
 		return nil, err
 	}
-	pages := int32(total) / request.PageSize
+	pages := int32(math.Ceil(float64(total) / float64(request.PageSize)))
 	return &proto.GetNewsFeedResponse{
 		News:        n,
 		TotalPages:  pages,
