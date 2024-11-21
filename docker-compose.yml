@@ -7,7 +7,7 @@ services:
       - "8080:8080"
     environment:
       - AUTH_SERVICE_ADDR=auth-service:9091
-      - USER_SERVICE_ADDR=user-service:9092
+      - USER_SERVICE_ADDR=user-service:9094
       - NEWS_SERVICE_ADDR=news-service:9093
       - REDIS_URL=redis:6379
       - GIN_MODE=release
@@ -27,8 +27,10 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-auth:5432/auth?sslmode=disable
       - GRPC_PORT=9091
       - HTTP_PORT=8081
+      - KAFKA_ADDR=kafka:9092
       - GIN_MODE=release
     depends_on:
+      - kafka
       - postgres-auth
     networks:
       - backend
@@ -38,15 +40,17 @@ services:
       context: .
       dockerfile: user-service/Dockerfile
     ports:
-      - "9092:9092"  # gRPC
+      - "9094:9094"  # gRPC
       - "8082:8082"  # HTTP (админка)
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-user:5432/user?sslmode=disable
-      - GRPC_PORT=9092
+      - GRPC_PORT=9094
       - HTTP_PORT=8082
       - AUTH_SERVICE_ADDR=auth-service:9091
+      - KAFKA_ADDR=kafka:9092
       - GIN_MODE=release
     depends_on:
+      - kafka
       - postgres-user
     networks:
       - backend
@@ -62,9 +66,11 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-news:5432/news?sslmode=disable
       - GRPC_PORT=9093
       - HTTP_PORT=8083
-      - USER_SERVICE_ADDR=user-service:9092
+      - USER_SERVICE_ADDR=user-service:9094
+      - KAFKA_ADDR=kafka:9092
       - GIN_MODE=release
     depends_on:
+      - kafka
       - postgres-news
     networks:
       - backend
@@ -179,6 +185,44 @@ services:
       - grafana-storage:/var/lib/grafana
     depends_on:
       - prometheus
+    networks:
+      - backend
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - backend
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - backend
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:9092 --list
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user.deleted.auth --partitions 1 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user.deleted.news --partitions 1 --replication-factor 1
+      echo -e 'Successfully created topics'
+      "
     networks:
       - backend
 

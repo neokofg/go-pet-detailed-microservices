@@ -11,8 +11,9 @@ import (
 	"time"
 )
 
-func InitServer(client *ent.Client, logger *zap.Logger) {
+func InitServer(client *ent.Client, logger *zap.Logger, producerClose func()) {
 	defer logger.Info("Servers exited properly")
+	defer producerClose()
 	defer client.Close()
 
 	grpcServer := servers.InitGrpcServer(client, logger)
