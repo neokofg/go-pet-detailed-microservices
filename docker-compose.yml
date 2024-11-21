@@ -9,6 +9,7 @@ services:
       - AUTH_SERVICE_ADDR=auth-service:9091
       - USER_SERVICE_ADDR=user-service:9092
       - NEWS_SERVICE_ADDR=news-service:9093
+      - REDIS_URL=redis:6379
       - GIN_MODE=release
     depends_on:
       - auth-service
@@ -107,6 +108,27 @@ services:
     networks:
       - backend
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - backend
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8090:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0
+    networks:
+      - backend
+    depends_on:
+      - redis
+
   postgres-auth-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter
     environment:
@@ -165,6 +187,7 @@ volumes:
   postgres-user-data:
   postgres-news-data:
   grafana-storage:
+  redis_data:
 
 networks:
   backend:

@@ -2,22 +2,27 @@ package queries
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	cache "github.com/neokofg/go-pet-detailed-microservices/api-gateway/pkg/redis"
 	newsProto "github.com/neokofg/go-pet-detailed-microservices/proto/pb/news/v1"
 	"go.uber.org/zap"
+	"log"
 	"net/http"
 	"time"
 )
 
 type NewsQueriesHandler struct {
 	logger  *zap.Logger
+	cache   *cache.Cache
 	newsSvc newsProto.NewsServiceClient
 }
 
-func NewNewsQueriesHandler(logger *zap.Logger, newsClient newsProto.NewsServiceClient) *NewsQueriesHandler {
+func NewNewsQueriesHandler(logger *zap.Logger, cache *cache.Cache, newsClient newsProto.NewsServiceClient) *NewsQueriesHandler {
 	return &NewsQueriesHandler{
 		logger:  logger,
+		cache:   cache,
 		newsSvc: newsClient,
 	}
 }
@@ -37,6 +42,14 @@ func (h *NewsQueriesHandler) GetNewsFeed(c *gin.Context) {
 		return
 	}
 
+	var cachedResp *newsProto.GetNewsFeedResponse
+	cacheName := fmt.Sprintf("news:%d_%d", req.Page, req.PageSize)
+	err := h.cache.Get(ctx, cacheName, &cachedResp)
+	if err == nil && cachedResp != nil {
+		c.JSON(http.StatusOK, cachedResp)
+		return
+	}
+
 	resp, err := h.newsSvc.GetNewsFeed(ctx, &newsProto.GetNewsFeedRequest{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
@@ -44,6 +57,10 @@ func (h *NewsQueriesHandler) GetNewsFeed(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if err := h.cache.Set(ctx, cacheName, resp, 5*time.Minute); err != nil {
+		log.Printf("Failed to cache response: %v", err)
 	}
 
 	c.JSON(http.StatusOK, resp)
