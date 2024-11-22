@@ -4,7 +4,7 @@ resource "twc_kubernetes_cluster" "cluster" {
   network_driver = "calico"
   region         = var.region
 
-  preset_id = "k8s-2"  # Выбираем подходящий пресет для нод
+  preset_id = "k8s-2"
 
   worker_groups {
     name       = "worker-group"
@@ -17,7 +17,6 @@ resource "twc_kubernetes_cluster" "cluster" {
   }
 }
 
-# Создаем namespace для кластера
 resource "kubernetes_namespace" "cluster_namespace" {
   metadata {
     name = var.cluster_name
