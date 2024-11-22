@@ -1,0 +1,10 @@
+all:
+  children:
+    kubernetes_clusters:
+      hosts:
+        frontend_cluster:
+          ansible_host: frontend.cluster.local
+        auth_cluster:
+          ansible_host: auth.cluster.local
+        database_cluster:
+          ansible_host: database.cluster.local

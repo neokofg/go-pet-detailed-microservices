@@ -1,0 +1,42 @@
+---
+- name: Configure Kubernetes Clusters
+  hosts: kubernetes_clusters
+  become: yes
+  
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - kubectl
+        - helm
+        - docker.io
+      when: ansible_os_family == "Debian"
+
+    - name: Create required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /etc/kubernetes/manifests
+        - /var/log/kubernetes
+
+    - name: Copy Kubernetes configs
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: '../kubernetes/auth/auth-service.yaml', dest: '/etc/kubernetes/manifests/' }
+        - { src: '../kubernetes/auth/postgres-auth.yaml', dest: '/etc/kubernetes/manifests/' }
+        - { src: '../kubernetes/frontend/api-gateway.yaml', dest: '/etc/kubernetes/manifests/' }
+
+    - name: Apply Kubernetes manifests
+      kubernetes.core.k8s:
+        state: present
+        src: "/etc/kubernetes/manifests/{{ item }}"
+      loop:
+        - auth-service.yaml
+        - postgres-auth.yaml
+        - api-gateway.yaml
